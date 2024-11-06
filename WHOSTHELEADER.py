@@ -50,6 +50,7 @@ df_placeholder = st.empty()
 
 # Display the leaderboard
 def display_leaderboard():
+    global leaderboard_df
     current_balance = []
 
     for team, csv_file in st.session_state.team_csv_files.items():
@@ -84,12 +85,11 @@ def display_leaderboard():
     # Reorder columns
     leaderboard_df = leaderboard_df[['RANK', 'TEAM NAME', 'BALANCE']]
 
-    leaderboard_style = leaderboard_df.style
-    return leaderboard_style
+    return leaderboard_df
 
 # Display the initial leaderboard
-leaderboard_style = display_leaderboard()
-df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
+leaderboard_df = display_leaderboard()
+df_placeholder.dataframe(leaderboard_df, hide_index=True, width=1200)
 
 ##################################################################################################################
 
@@ -103,12 +103,11 @@ with st.form("update_team"):
         if csv_file:
             if "account-history" in csv_file.name:
                 update_team_csv_files(team_name, csv_file)
-                leaderboard_style = display_leaderboard()
-                df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
+                leaderboard_df = display_leaderboard()
+                df_placeholder.dataframe(leaderboard_df, hide_index=True, width=1200)  # Update the dataframe
                 st.success("Team updated successfully!")
 
                 # Save the updated dataframe to a CSV file
-                leaderboard_df = pd.DataFrame(leaderboard_style.data)
                 leaderboard_df.to_csv(LEADERBOARD_FILE, index=False)
 
                 # Commit the changes to Git
@@ -157,6 +156,3 @@ for secs in range(int(total_seconds), 0, -1):
     time.sleep(1)
 
 ph.metric("TRADING TIME LEFT", "NO MORE TIME!")
-
-# Display the leaderboard dataframe
-df_placeholder.dataframe(leaderboard_df, hide_index=True, width=1200)
