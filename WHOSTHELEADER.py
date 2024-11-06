@@ -1,16 +1,6 @@
 import pandas as pd
 import streamlit as st
 import io
-import subprocess
-
-# Define the file path for the leaderboard dataframe
-LEADERBOARD_FILE = "leaderboard.csv"
-
-# Load the leaderboard dataframe from file (if it exists)
-try:
-    leaderboard_df = pd.read_csv(LEADERBOARD_FILE)
-except FileNotFoundError:
-    leaderboard_df = pd.DataFrame(columns=["TEAM NAME", "BALANCE"])
 
 # Dictionary mapping team names to their CSV files
 team_csv_files = {
@@ -27,12 +17,14 @@ team_csv_files = {
 if 'team_csv_files' not in st.session_state:
     st.session_state.team_csv_files = team_csv_files
 
+
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
     if team_name in st.session_state.team_csv_files:
         st.session_state.team_csv_files[team_name] = csv_file
     else:
         st.error("Team not found.")
+
 
 # Streamlit app
 st.set_page_config()
@@ -47,6 +39,7 @@ with col2:
 
 # Create a placeholder for the dataframe
 df_placeholder = st.empty()
+
 
 # Display the leaderboard
 def display_leaderboard():
@@ -87,6 +80,7 @@ def display_leaderboard():
     leaderboard_style = leaderboard_df.style
     return leaderboard_style
 
+
 # Display the initial leaderboard
 leaderboard_style = display_leaderboard()
 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
@@ -106,17 +100,6 @@ with st.form("update_team"):
                 leaderboard_style = display_leaderboard()
                 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
                 st.success("Team updated successfully!")
-
-                # Save the updated dataframe to a CSV file
-                leaderboard_df = pd.DataFrame(leaderboard_style.data)
-                leaderboard_df.to_csv(LEADERBOARD_FILE, index=False)
-
-                # Commit the changes to Git
-                subprocess.run(["git", "add", LEADERBOARD_FILE])
-                subprocess.run(["git", "commit", "-m", "Update leaderboard"])
-
-                # Push the changes to Streamlit Cloud
-                subprocess.run(["streamlit", "cloud", "push"])
             else:
                 st.error("Please upload Account History CSV file.")
         else:
@@ -157,6 +140,3 @@ for secs in range(int(total_seconds), 0, -1):
     time.sleep(1)
 
 ph.metric("TRADING TIME LEFT", "NO MORE TIME!")
-
-# Display the leaderboard dataframe
-df_placeholder.dataframe(leaderboard_df, hide_index=True, width=1200)
