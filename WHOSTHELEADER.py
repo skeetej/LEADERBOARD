@@ -1,6 +1,16 @@
 import pandas as pd
 import streamlit as st
 import io
+import gspread
+
+# Set up your Google Sheet
+sheet_name = "LBDATABASE"
+
+# Authenticate with Google Sheets
+gc = gspread.service_account(filename='q-dev-440922-794bc70660de.json')
+
+# Open the worksheet
+worksheet = gc.open(sheet_name).sheet1
 
 # Dictionary mapping team names to their CSV files
 team_csv_files = {
@@ -17,6 +27,19 @@ team_csv_files = {
 if 'team_csv_files' not in st.session_state:
     st.session_state.team_csv_files = team_csv_files
 
+# Load the leaderboard DataFrame from Google Sheets
+def load_leaderboard():
+    try:
+        data = worksheet.get_all_records()
+        leaderboard_df = pd.DataFrame(data)
+        return leaderboard_df
+    except:
+        return pd.DataFrame(columns=['TEAM NAME', 'BALANCE'])
+
+# Save the leaderboard DataFrame to Google Sheets
+def save_leaderboard(leaderboard_df):
+    worksheet.clear()
+    worksheet.update('A1', leaderboard_df.values.tolist())
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
@@ -24,7 +47,6 @@ def update_team_csv_files(team_name, csv_file):
         st.session_state.team_csv_files[team_name] = csv_file
     else:
         st.error("Team not found.")
-
 
 # Streamlit app
 st.set_page_config()
@@ -39,7 +61,6 @@ with col2:
 
 # Create a placeholder for the dataframe
 df_placeholder = st.empty()
-
 
 # Display the leaderboard
 def display_leaderboard():
@@ -80,10 +101,15 @@ def display_leaderboard():
     leaderboard_style = leaderboard_df.style
     return leaderboard_style
 
+# Load the leaderboard DataFrame from Google Sheets
+leaderboard_df = load_leaderboard()
 
 # Display the initial leaderboard
 leaderboard_style = display_leaderboard()
 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
+
+# Save the leaderboard DataFrame to Google Sheets
+save_leaderboard(leaderboard_df)
 
 ##################################################################################################################
 
@@ -99,6 +125,9 @@ with st.form("update_team"):
                 update_team_csv_files(team_name, csv_file)
                 leaderboard_style = display_leaderboard()
                 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
+                leaderboard_df = pd.DataFrame(
+                    {'TEAM NAME': list(st.session_state.team_csv_files.keys()), 'BALANCE': leaderboard_style.data['BALANCE']})
+                save_leaderboard(leaderboard_df)
                 st.success("Team updated successfully!")
             else:
                 st.error("Please upload Account History CSV file.")
