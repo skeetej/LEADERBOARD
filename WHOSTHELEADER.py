@@ -122,10 +122,17 @@ with col2:
 # Create a placeholder for the dataframe
 df_placeholder = st.empty()
 
-# Display the leaderboard
-leaderboard_df = display_leaderboard()
-leaderboard_style = leaderboard_df.style
-df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
+# Load the leaderboard DataFrame from Google Sheets
+leaderboard_df = load_leaderboard()
+
+# Display the leaderboard DataFrame
+if not leaderboard_df.empty:
+    leaderboard_style = leaderboard_df.style
+    df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
+else:
+    leaderboard_df = display_leaderboard()
+    leaderboard_style = leaderboard_df.style
+    df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
 
 # Save the leaderboard DataFrame to Google Sheets
 if 'worksheet' in locals():
