@@ -50,7 +50,7 @@ def load_leaderboard():
 
 # Save the leaderboard DataFrame to Google Sheets
 def save_leaderboard(leaderboard_df):
-    worksheet.update_cells(crange='A1:B2', values=leaderboard_df.values.tolist())
+    worksheet.update_cells(crange='A1:C2', values=leaderboard_df.values.tolist())
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
@@ -59,21 +59,7 @@ def update_team_csv_files(team_name, csv_file):
     else:
         st.error("Team not found.")
 
-# Streamlit app
-st.set_page_config()
-
-col1, col2 = st.columns([1, 4])
-
-with col1:
-    st.image("SMIP.png", width=150)
-
-with col2:
-    st.title("SMIP TRADING LEADERBOARD")
-
-# Create a placeholder for the dataframe
-df_placeholder = st.empty()
-
-# Display the leaderboard
+# Function to display the leaderboard
 def display_leaderboard():
     current_balance = []
 
@@ -109,14 +95,25 @@ def display_leaderboard():
     # Reorder columns
     leaderboard_df = leaderboard_df[['RANK', 'TEAM NAME', 'BALANCE']]
 
-    leaderboard_style = leaderboard_df.style
-    return leaderboard_style
+    return leaderboard_df
 
-# Load the leaderboard DataFrame from Google Sheets
+# Streamlit app
+st.set_page_config()
+
+col1, col2 = st.columns([1, 4])
+
+with col1:
+    st.image("SMIP.png", width=150)
+
+with col2:
+    st.title("SMIP TRADING LEADERBOARD")
+
+# Create a placeholder for the dataframe
+df_placeholder = st.empty()
+
+# Display the leaderboard
 leaderboard_df = display_leaderboard()
-
-# Display the initial leaderboard
-leaderboard_style = display_leaderboard()
+leaderboard_style = leaderboard_df.style
 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
 
 # Save the leaderboard DataFrame to Google Sheets
@@ -132,11 +129,9 @@ with st.form("update_team"):
         if csv_file:
             if "account-history" in csv_file.name:
                 update_team_csv_files(team_name, csv_file)
-                leaderboard_style = display_leaderboard()
+                leaderboard_df = display_leaderboard()
+                leaderboard_style = leaderboard_df.style
                 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
-                leaderboard_df = pd.DataFrame(
-                    {'TEAM NAME': list(st.session_state.team_csv_files.keys()),
-                     'BALANCE': leaderboard_style.data['BALANCE']})
                 save_leaderboard(leaderboard_df)
                 st.success("Team updated successfully!")
             else:
