@@ -22,7 +22,10 @@ with open('NOWORDS.json', 'w') as f:
 gc = pygsheets.authorize(service_file='NOWORDS.json')
 
 # Open the worksheet
-worksheet = gc.open('LBDATABASE').sheet1
+try:
+    worksheet = gc.open('LBDATABASE').sheet1
+except pygsheets.SpreadsheetNotFound:
+    pass
 
 # Dictionary mapping team names to their CSV files
 team_csv_files = {
@@ -50,7 +53,15 @@ def load_leaderboard():
 
 # Save the leaderboard DataFrame to Google Sheets
 def save_leaderboard(leaderboard_df):
-    worksheet.set_dataframe(leaderboard_df, (1, 1))
+    try:
+        existing_data = worksheet.get_all_records()
+        existing_df = pd.DataFrame(existing_data)
+        if not existing_df.equals(leaderboard_df):
+            worksheet.set_dataframe(leaderboard_df, (1, 1))
+    except pygsheets.SpreadsheetNotFound:
+        pass
+    except:
+        worksheet.set_dataframe(leaderboard_df, (1, 1))
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
@@ -117,7 +128,8 @@ leaderboard_style = leaderboard_df.style
 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
 
 # Save the leaderboard DataFrame to Google Sheets
-save_leaderboard(leaderboard_df)
+if 'worksheet' in locals():
+    save_leaderboard(leaderboard_df)
 
 # Input field to update a team
 with st.form("update_team"):
@@ -132,7 +144,8 @@ with st.form("update_team"):
                 leaderboard_df = display_leaderboard()
                 leaderboard_style = leaderboard_df.style
                 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
-                save_leaderboard(leaderboard_df)
+                if 'worksheet' in locals():
+                    save_leaderboard(leaderboard_df)
                 st.success("Team updated successfully!")
             else:
                 st.error("Please upload Account History CSV file.")
