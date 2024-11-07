@@ -50,7 +50,7 @@ def load_leaderboard():
 
 # Save the leaderboard DataFrame to Google Sheets
 def save_leaderboard(leaderboard_df):
-    worksheet.update_cells(crange='A1:C2', values=leaderboard_df.values.tolist())
+    worksheet.set_dataframe(leaderboard_df, (1, 1))
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
