@@ -1,13 +1,13 @@
+import pygsheets
 import pandas as pd
 import streamlit as st
 import io
-import gspread
 
 # Set up your Google Sheet
 sheet_name = "LBDATABASE"
 
 # Authenticate with Google Sheets
-gc = gspread.service_account(filename='q-dev-440922-794bc70660de.json')
+gc = pygsheets.authorize(service_file='NOWORDS.json')
 
 # Open the worksheet
 worksheet = gc.open(sheet_name).sheet1
@@ -38,8 +38,7 @@ def load_leaderboard():
 
 # Save the leaderboard DataFrame to Google Sheets
 def save_leaderboard(leaderboard_df):
-    worksheet.clear()
-    worksheet.update('A1', leaderboard_df.values.tolist())
+    worksheet.update_cells(crange='A1', values=leaderboard_df.values.tolist())
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
@@ -102,7 +101,7 @@ def display_leaderboard():
     return leaderboard_style
 
 # Load the leaderboard DataFrame from Google Sheets
-leaderboard_df = load_leaderboard()
+leaderboard_df = display_leaderboard()
 
 # Display the initial leaderboard
 leaderboard_style = display_leaderboard()
