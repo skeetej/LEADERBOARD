@@ -1,25 +1,28 @@
-from googleapiclient.discovery import build
+import pygsheets
 import pandas as pd
 import streamlit as st
 import io
+import json
+import time
+from datetime import datetime
 
-# Set up your Google Sheet
-sheet_name = "LBDATABASE"
+# Load the JSON file
+with open('NOWORDS.json', 'r') as f:
+    json_data = json.load(f)
 
-# Authenticate with Google Sheets
-creds = None
-if creds is None or not creds.valid:
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    else:
-        creds = Credentials.from_service_account_file('NOWORDS.json')
+# Replace the ${API_KEY} placeholder with the actual API key
+api_key = st.secrets["API_KEY"]
+json_data["private_key"] = api_key
 
-# Create the Google Sheets API client
-service = build('sheets', 'v4', credentials=creds)
+# Write the updated JSON data back to the file
+with open('NOWORDS.json', 'w') as f:
+    json.dump(json_data, f)
+
+# Authorize with the updated JSON file
+gc = pygsheets.authorize(service_file='NOWORDS.json')
 
 # Open the worksheet
-spreadsheet_id = '1FIksJyvWZaQ1cOKSaMm5sbex4ctntoIJnbIVbGJVC9w'
-range_name = 'LBDATABASEA1:B2'
+worksheet = gc.open('LBDATABASE').sheet1
 
 # Dictionary mapping team names to their CSV files
 team_csv_files = {
@@ -39,19 +42,15 @@ if 'team_csv_files' not in st.session_state:
 # Load the leaderboard DataFrame from Google Sheets
 def load_leaderboard():
     try:
-        response = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-        values = response.get('values', [])
-        leaderboard_df = pd.DataFrame(values)
+        data = worksheet.get_all_records()
+        leaderboard_df = pd.DataFrame(data)
         return leaderboard_df
     except:
         return pd.DataFrame(columns=['TEAM NAME', 'BALANCE'])
 
 # Save the leaderboard DataFrame to Google Sheets
 def save_leaderboard(leaderboard_df):
-    body = {
-        'values': leaderboard_df.values.tolist()
-    }
-    response = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_name, body=body).execute()
+    worksheet.update_cells(crange='A1:B2', values=leaderboard_df.values.tolist())
 
 # Function to update the dictionary
 def update_team_csv_files(team_name, csv_file):
@@ -123,8 +122,6 @@ df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)
 # Save the leaderboard DataFrame to Google Sheets
 save_leaderboard(leaderboard_df)
 
-##################################################################################################################
-
 # Input field to update a team
 with st.form("update_team"):
     team_name = st.selectbox("Select Team", list(st.session_state.team_csv_files.keys()))
@@ -138,18 +135,14 @@ with st.form("update_team"):
                 leaderboard_style = display_leaderboard()
                 df_placeholder.dataframe(leaderboard_style, hide_index=True, width=1200)  # Update the dataframe
                 leaderboard_df = pd.DataFrame(
-                    {'TEAM NAME': list(st.session_state.team_csv_files.keys()), 'BALANCE': leaderboard_style.data['BALANCE']})
+                    {'TEAM NAME': list(st.session_state.team_csv_files.keys()),
+                     'BALANCE': leaderboard_style.data['BALANCE']})
                 save_leaderboard(leaderboard_df)
                 st.success("Team updated successfully!")
             else:
                 st.error("Please upload Account History CSV file.")
         else:
             st.error("Please select a CSV file.")
-
-#################################################################################################################
-
-import time
-from datetime import datetime
 
 # Set the target date
 target_date = datetime(2024, 12, 4)  # Replace with your desired date
